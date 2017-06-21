@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using MoreLinq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,29 +12,44 @@ namespace WebApplicationBasic.Controllers
         const int MAX_DAYS = 7;
         private static string[] Summaries = new[]
         {
-            "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
+            "Freezing", "Chilly", "Cool", "Mild", "Balmy", "Hot", "Sweltering"
         };
 
         [HttpGet("[action]")]
         public IEnumerable<WeatherForecast> WeatherForecasts(int startDateIndex)
         {
             var rng = new Random();
-            var tmp = Enumerable.Range(1, MAX_DAYS).Select(x => rng.Next(-10, 40)).ToArray();
-            //int bucket = (32 + (int)(tmp / 0.5556)) % 10;
+            var tmp = Enumerable.Range(1, MAX_DAYS).Select((x, bucket) => rng.Next(-20, 55)).ToArray();
 
-            return Enumerable.Range(1, MAX_DAYS).Select(index => new WeatherForecast
+            return tmp.AsEnumerable().Select((x, idx) => new WeatherForecast
             {
-                DateFormatted = DateTime.Now.AddDays(index + startDateIndex).ToString("d"),
-                TemperatureC = tmp[index - 1], //rng.Next(-20, 55)
-                Summary = Summaries[(32 + (int)(tmp[index - 1] / 0.5556)) % 10]//Summaries[rng.Next(Summaries.Length)]
-            });
+                DateFormatted = DateTime.Now.AddDays(idx + startDateIndex).ToString("d"),
+                TemperatureC = tmp[idx]
+            }).AsEnumerable();
+
         }
 
         public class WeatherForecast
         {
             public string DateFormatted { get; set; }
             public int TemperatureC { get; set; }
-            public string Summary { get; set; }
+
+            public string Summary
+            {
+
+                get
+                {
+                    int my = 0;
+                    foreach (var band in Enumerable.Range(-20, 55).Batch(10))
+                    {
+                        if (band.Any(i => i == this.TemperatureC))
+                            break;
+                        //return Summaries[my];
+                        my++;
+                    }
+                    return Summaries[my];
+                }
+            }
 
             public int TemperatureF
             {
@@ -45,3 +61,4 @@ namespace WebApplicationBasic.Controllers
         }
     }
 }
+
